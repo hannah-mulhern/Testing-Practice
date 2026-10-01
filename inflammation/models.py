@@ -52,3 +52,87 @@ def patient_normalise(data):
         normalised = data / max_data[:, np.newaxis]
     normalised[np.isnan(normalised)] = 0
     return normalised
+
+class Patient:
+    def __init__(self, id, data):
+        self.id = id
+        self.data = data
+    def data_mean(self):
+        """Calculate the mean of a patient's inflammation data"""
+        return np.mean(self.data)
+    def data_max(self):
+        """Calculate the max of a patient's inflammation data"""
+        return np.max(self.data)
+    def data_min(self):
+        """Calculate the min of a patient's inflammation data"""
+        return np.min(self.data)
+
+class Trial:
+    def __init__(self, data, id):
+        self.data = data
+        self.id = id
+
+    def get_patient(self, row):
+         return Patient(row, self.data[row, :])
+
+    @classmethod
+    def from_csv(cls, filename, id):
+         """
+         Class method to create a Trial isntance from data in a CSV file
+         
+         Parameters:
+         filename (str): File path of the CSV file to read
+         id (str): The id to assign to the Trial instance.
+         
+         Returns:
+         Trial: A trial instance with teh data and id from the csv file
+         """
+         data = cls.load_csv(filename)
+         return cls(data, id)
+
+    @staticmethod
+    def load_csv(filename):
+        """Load a numpy array from a CSV file
+        :param filename: Filename of the CSV file that is being loaded
+        """
+        return np.loadtxt(fname=filename, delimiter=',')
+
+    def daily_mean(self):
+        """Calculate the daily mean of a 2d inflammation data array."""
+        return np.mean(self.data, axis=0)
+
+    def daily_max(self):
+            """Calculate the daily max of a 2d inflammation data array."""
+            return np.max(self.data, axis=0)
+
+    def daily_min(self):
+            """Calculate the daily min of a 2d inflammation data array."""
+            return np.min(self.data, axis=0)
+
+    def patient_normalise(self):
+        """
+        Normalise patient data from a 2D inflammation data array.
+
+        NaN values are ignored, and normalised to 0.
+
+        Negative values are rounded to 0.
+        """
+        if np.any(self.data < 0):
+                raise ValueError('Inflammation values should not be negative')
+        if not isinstance(self.data, np.ndarray):
+            raise TypeError('data input should be ndarray')
+        if len(self.data.shape) != 2:
+                raise ValueError('Inflammation array should be 2-dimensional')
+        max_data = np.nanmax(self.data, axis=1)
+        with np.errstate(invalid='ignore', divide='ignore'):
+            normalised = self.data / max_data[:, np.newaxis]
+        normalised[np.isnan(normalised)] = 0
+        normalised[normalised < 0] = 0
+        return normalised
+
+
+filename = "data/inflammation-01.csv"
+data = np.loadtxt(fname=filename, delimiter=',')
+
+trial_group_01 = Trial(data, "Group01")
+trial_group_02 = Trial.from_csv("data/inflammation-02.csv", "Group02")
